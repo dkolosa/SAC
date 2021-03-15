@@ -20,7 +20,7 @@ class SAC:
         self.gamma = gamma
         self.tau = tau
         self.save_dir = save_dir
-
+    
         self.actor = Actor(self.states, self.action, self.action_bound, layer_1, layer_2, lr_act)
         self.critic = Critic(self.states, self.action, layer_1, layer_2, lr_crit)
         self.value = Value(self.states, layer_1, layer_2, lr_val)
@@ -34,10 +34,8 @@ class SAC:
 
     
     def take_action(self, state):
-        self.actor.train()
         state = T.tensor([state], dtype=T.float).to(self.actor.device)
-        act, _ = self.actor.forwaard(state)
-        self.actor.eval()
+        act, _ = self.actor.normaalize_sample(state, reparam=False)
         return act.cpu().detach().numpy()[0]
 
     def train(self):
@@ -48,6 +46,8 @@ class SAC:
             r_rep = T.tensor(np.array([_[2] for _ in mem]), dtype=T.float).to(self.actor.device)
             s1_rep = T.tensor(np.array([_[3] for _ in mem]), dtype=T.float).to(self.actor.device)
             d_rep = T.tensor(np.array([_[4] for _ in mem])).to(self.actor.device)
+
+            T.autograd.set_detect_anomaly(True)
 
             # Calculate critic and train
             value = self.value.forwaard(s_rep).view(-1)
@@ -82,7 +82,7 @@ class SAC:
             critic_loss = critic_loss_1 + critic_loss_targ
             critic_loss.backward()
             self.critic.optimizer.step()
-            # self.critic_target.optimizer.step()
+            self.critic_target.optimizer.step()
 
             # update targets
             self.update_target()

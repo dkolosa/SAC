@@ -23,7 +23,7 @@ if __name__ == '__main__':
     n_action = env.action_space.shape[0]
     n_states = env.observation_space.shape[0]
     action_bound = env.action_space.high
-    batch_size = 10
+    batch_size = 1
     # Will have to add conv nets for processing
     # use conv and FC layers to process the images
 

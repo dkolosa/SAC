@@ -7,7 +7,7 @@ from torch.distributions import Normal
 
 
 class Actor(T.nn.Module):
-    def __init__(self, states, actions, action_bound, layer_1=128, layer_2=128, lr=0.0001, save_dir='sac_actor.ckpt'):
+    def __init__(self, states, actions, action_bound=1, layer_1=128, layer_2=128, lr=0.0001, save_dir='sac_actor.ckpt'):
         super(Actor, self).__init__()
 
         self.states = states
@@ -43,7 +43,7 @@ class Actor(T.nn.Module):
 
         return mu, std
 
-    def normaalize_sample(self, state, reparam):
+    def normaalize_sample(self, state, reparam=True):
         mu, std = self.forwaard(state)
         prob = Normal(mu, std)
         if reparam:
@@ -53,11 +53,11 @@ class Actor(T.nn.Module):
         
         act = T.tanh(acts) * T.tensor(self.action_bound).to(self.device)
         
-        log_prob = prob.log_prob(acts)
-        log_prob -= T.log(1-act.pow(2) + self.noise)
-        log_prob = log_prob.sum(1, keepdim=True)
+        log_probs = prob.log_prob(acts)
+        log_probs -= T.log(1-act.pow(2) + self.noise)
+        log_probs = log_probs.sum(1, keepdim=True)
 
-        return act, log_prob
+        return act, log_probs
     
     def save_model(self, save_dir):
         T.save(self.state_dict(), os.path.join(save_dir,self.chkpt))
@@ -67,10 +67,10 @@ class Actor(T.nn.Module):
 
 
 class Critic(T.nn.Module):
-    def __init__(self, states, actions, layer_1=128, layer_2=128, lr=0.0001, save_dir='sac_critic.ckpt'):
+    def __init__(self, n_states, actions, layer_1=128, layer_2=128, lr=0.0001, save_dir='sac_critic.ckpt'):
         super(Critic, self).__init__()
 
-        self.states = states
+        self.n_states = n_states
         self.actions = actions
         self.ckpt = save_dir
 
@@ -79,7 +79,7 @@ class Critic(T.nn.Module):
 
         self.noise = 1e-6
 
-        self.fc1 = nn.Linear(self.states+self.actions, self.layer_1)
+        self.fc1 = nn.Linear(n_states+actions, self.layer_1)
         self.fc2 = nn.Linear(self.layer_1, self.layer_2)
         self.q = nn.Linear(self.layer_2, 1)
 
@@ -115,7 +115,7 @@ class Value(T.nn.Module):
         self.fc1 = nn.Linear(states, self.layer_1)
         self.fc2 = nn.Linear(self.layer_1, self.layer_2)
 
-        self.value = nn.Linear(self.layer_2, 1)
+        self.val = nn.Linear(self.layer_2, 1)
 
         self.device = T.device('cuda:0' if T.cuda.is_available() else 'cpu')
         self.optimizer = Adam(self.parameters(), lr=lr)
@@ -126,9 +126,9 @@ class Value(T.nn.Module):
        
         x = F.relu(self.fc1(input_))
         x = F.relu(self.fc2(x))
-        value = self.value(x)
+        x = self.val(x)
 
-        return value
+        return x
 
     def save_model(self, save_dir):
         T.save(self.state_dict(), os.path.join(save_dir,self.chkpt))
