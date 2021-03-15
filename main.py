@@ -42,16 +42,14 @@ if __name__ == '__main__':
     if load_models:
         agent.load_model()
 
-    sum_reward = 0
-
     j = 0
     for i in range(num_episodes):
         s = env.reset()
         done = False
         sum_reward = 0
         while True:
-            env.render()
-            a = agent.action(s_img)
+            # env.render()
+            a = agent.take_action(s)
             s1, r, done, _ = env.step(a)
 
             # Store in replay memory
@@ -64,12 +62,9 @@ if __name__ == '__main__':
             sum_reward += r
             s = s1
             j += 1
-
-            if j > iter_per_episode:
-                done = True
             if done:
                 if save:
                     agent.save_model()
-                print(f'Episode {i} of {num_episodes}, distance from target (m):{carla_env.distance:.3f}, reward {sum_reward:.4f} '
+                print(f'Episode {i} of {num_episodes}, reward {sum_reward:.4f} '
                         f'\n==================================================================')
                 break

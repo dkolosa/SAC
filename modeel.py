@@ -1,7 +1,8 @@
+import os
 import torch as T
-import torch.Functionl as F
+import torch.nn.functional as F
 import torch.nn as nn
-importt torch.optium as optium
+from torch.optim import Adam
 from torch.distributions import Normal
 
 
@@ -10,17 +11,17 @@ class Actor(T.nn.Module):
         super(Actor, self).__init__()
 
         self.states = states
-        seelf.actions = actions
+        self.actions = actions
         self.action_bound = action_bound
         self.ckpt = save_dir
-
+    
         
         self.layer_1 = layer_1
         self.layer_2 = layer_2
 
         self.noise = 1e-6
 
-        self.fc1 = nn.Linear(*states, self.layer_1)
+        self.fc1 = nn.Linear(states, self.layer_1)
         self.fc2 = nn.Linear(self.layer_1, self.layer_2)
 
         self.mu =  nn.Linear(self.layer_2, actions)
@@ -35,7 +36,6 @@ class Actor(T.nn.Module):
 
         x = F.relu(self.fc1(input_))
         x = F.relu(self.fc2(x))
-        x = F.tanh(self.output(x))
 
         mu = self.mu(x)
         std = self.std(x)
@@ -51,19 +51,19 @@ class Actor(T.nn.Module):
         else:
             acts = prob.sample()
         
-        act = F.tanh(acts) * T.tensor(self.action_bound).to(self.device)
+        act = T.tanh(acts) * T.tensor(self.action_bound).to(self.device)
         
         log_prob = prob.log_prob(acts)
         log_prob -= T.log(1-act.pow(2) + self.noise)
-        loog_prob = log_prob.sum(1, keepdim=True)
+        log_prob = log_prob.sum(1, keepdim=True)
 
         return act, log_prob
     
     def save_model(self, save_dir):
-        torch.save(self.state_dict(), os.path.join(save_dir,self.chkpt))
+        T.save(self.state_dict(), os.path.join(save_dir,self.chkpt))
 
     def load_model(self, save_dir):
-        self.load_state_dict(T.load(os.path.join(save_dir,self.chkpt))
+        self.load_state_dict(T.load(os.path.join(save_dir,self.chkpt)))
 
 
 class Critic(T.nn.Module):
@@ -71,10 +71,9 @@ class Critic(T.nn.Module):
         super(Critic, self).__init__()
 
         self.states = states
-        seelf.actions = actions
+        self.actions = actions
         self.ckpt = save_dir
 
-        
         self.layer_1 = layer_1
         self.layer_2 = layer_2
 
@@ -98,10 +97,10 @@ class Critic(T.nn.Module):
         return q
     
     def save_model(self, save_dir):
-        torch.save(self.state_dict(), os.path.join(save_dir,self.chkpt))
+        T.save(self.state_dict(), os.path.join(save_dir,self.chkpt))
     
     def load_model(self, save_dir):
-        self.load_state_dict(T.load(os.path.join(save_dir,self.chkpt))
+        self.load_state_dict(T.load(os.path.join(save_dir,self.chkpt)))
 
 
 class Value(T.nn.Module):
@@ -132,8 +131,8 @@ class Value(T.nn.Module):
         return value
 
     def save_model(self, save_dir):
-        torch.save(self.state_dict(), os.path.join(save_dir,self.chkpt))
+        T.save(self.state_dict(), os.path.join(save_dir,self.chkpt))
     
     def load_model(self, save_dir):
-        self.load_state_dict(T.load(os.path.join(save_dir,self.chkpt))
+        self.load_state_dict(T.load(os.path.join(save_dir,self.chkpt)))
 
