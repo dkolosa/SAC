@@ -43,11 +43,13 @@ class Actor(T.nn.Module):
 
         return mu, std
 
-    def normaalize_sample(self, state):
+    def normaalize_sample(self, state, reparam):
         mu, std = self.forwaard(state)
         prob = Normal(mu, std)
-   
-        acts = prob.sample()
+        if reparam:
+            acts = prob.rsample()
+        else:
+            acts = prob.sample()
         
         act = F.tanh(acts) * T.tensor(self.action_bound).to(self.device)
         
