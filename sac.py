@@ -47,15 +47,21 @@ class SAC:
             s1_rep = T.tensor(np.array([_[3] for _ in mem]), dtype=T.float).to(self.actor.device)
             d_rep = T.tensor(np.array([_[4] for _ in mem])).to(self.actor.device)
 
-            T.autograd.set_detect_anomaly(True)
 
             # Calculate critic and train
             value = self.value.forwaard(s_rep).view(-1)
-            value_1 = self.value.forwaard(s1_rep).view(-1)
+            value_1 = self.value_target.forwaard(s1_rep).view(-1)
             value_1[d_rep] = 0.0
 
             # Value loss
-            probs, q = self.calculate_q(s_rep,reparam=False)
+            # probs, q = self.calculate_q(s_rep,reparam=False)
+            acts, probs = self.actor.normaalize_sample(s_rep,reparam=False)
+            probs = probs.view(-1)
+            q_1 = self.critic.forwaard(s_rep, acts)
+            q_2 = self.critic_target.forwaard(s_rep, acts)
+            q = T.min(q_1, q_2)
+            q = q.view(-1)
+
             self.value.optimizer.zero_grad()
             value_target = q - probs
             value_loss = .5 * F.mse_loss(value, value_target)
@@ -63,8 +69,15 @@ class SAC:
             self.value.optimizer.step()
 
             # actor loss
-            probs_act, q_act = self.calculate_q(s_rep, reparam=True)
-            actor_loss = probs_act - q_act
+            # probs_act, q_act = self.calculate_q(s_rep, reparam=True)
+            acts, probs = self.actor.normaalize_sample(s_rep,reparam=True)
+            probs = probs.view(-1)
+            q_1 = self.critic.forwaard(s_rep, acts)
+            q_2 = self.critic_target.forwaard(s_rep, acts)
+            q = T.min(q_1, q_2)
+            q = q.view(-1)
+
+            actor_loss = probs - q
             actor_loss = T.mean(actor_loss)
             self.actor.optimizer.zero_grad()
             actor_loss.backward(retain_graph=True)

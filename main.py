@@ -21,7 +21,7 @@ if __name__ == '__main__':
     save_dir = os.path.join(model_dir, str(datetime.date.today()) + '-' + ENV)
 
     n_action = env.action_space.shape[0]
-    n_states = env.observation_space.shape[0]
+    n_states = env.observation_space.shape
     action_bound = env.action_space.high
     batch_size = 1
     # Will have to add conv nets for processing
@@ -54,8 +54,8 @@ if __name__ == '__main__':
 
             # Store in replay memory
             agent.memory.add(
-                (np.reshape(s, (n_states,)), np.reshape(a, (n_action,)), r, 
-                np.reshape(s1, (n_states,)), done))
+                (np.reshape(s, (n_states[0],)), np.reshape(a, (n_action,)), r, 
+                np.reshape(s1, (n_states[0],)), done))
 
             agent.train()
 

@@ -1,9 +1,10 @@
 import os
+import numpy as np
 import torch as T
 import torch.nn.functional as F
 import torch.nn as nn
 from torch.optim import Adam
-from torch.distributions import Normal
+from torch.distributions.normal import Normal
 
 
 class Actor(T.nn.Module):
@@ -21,7 +22,7 @@ class Actor(T.nn.Module):
 
         self.noise = 1e-6
 
-        self.fc1 = nn.Linear(states, self.layer_1)
+        self.fc1 = nn.Linear(*states, self.layer_1)
         self.fc2 = nn.Linear(self.layer_1, self.layer_2)
 
         self.mu =  nn.Linear(self.layer_2, actions)
@@ -39,7 +40,7 @@ class Actor(T.nn.Module):
 
         mu = self.mu(x)
         std = self.std(x)
-        std = T.clamp(std, 1e-4, 1)
+        std = T.clamp(std, min=self.noise, max=1)
 
         return mu, std
 
@@ -79,7 +80,7 @@ class Critic(T.nn.Module):
 
         self.noise = 1e-6
 
-        self.fc1 = nn.Linear(n_states+actions, self.layer_1)
+        self.fc1 = nn.Linear(n_states[0]+actions, self.layer_1)
         self.fc2 = nn.Linear(self.layer_1, self.layer_2)
         self.q = nn.Linear(self.layer_2, 1)
 
@@ -112,7 +113,7 @@ class Value(T.nn.Module):
         self.layer_2 = layer_2
         self.ckpt = save_dir
 
-        self.fc1 = nn.Linear(states, self.layer_1)
+        self.fc1 = nn.Linear(*states, self.layer_1)
         self.fc2 = nn.Linear(self.layer_1, self.layer_2)
 
         self.val = nn.Linear(self.layer_2, 1)
